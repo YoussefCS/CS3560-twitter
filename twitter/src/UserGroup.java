@@ -1,30 +1,40 @@
 package com.twitter;
 
+import javax.swing.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserGroup implements Component {
+public class UserGroup extends CustomComponent {
     private String groupID;
-    private List<Component> members;
+    private ImageIcon icon;
+    private List<CustomComponent> children;
+    private long creationTime;
 
-    public UserGroup(String groupID) {
-        this.groupID = groupID;
-        members = new ArrayList<>();
+
+    public UserGroup(String groupID, ImageIcon icon) {
+        super(groupID);
+        this.creationTime = System.currentTimeMillis();
+        children = new ArrayList<>();
     }
 
-    public void addUser(User user) {
-        members.add(user);
+    public String getGroupID() {
+        return groupID;
     }
 
-    public void addComponent(Component component) {
-        members.add(component);
+    public ImageIcon getIcon() {
+        return icon;
     }
 
-    @Override
-    public void accept(Visitor visitor) {
-        visitor.visit(this);
-        for (Component member : members) {
-            member.accept(visitor);
-        }
+    public List<CustomComponent> getChildren() {
+        return children;
+    }
+
+    public void add(CustomComponent component) {
+        children.add(component);
+    }
+
+    // Getter for creationTime
+    public long getCreationTime() {
+        return creationTime;
     }
 }
