@@ -3,13 +3,17 @@ package com.twitter;
 import java.util.ArrayList;
 import java.util.List;
 
-public class User implements Component, Observer {
+public class User implements CustomComponent, Observer {
     private String userID;
     private List<User> followers;
     private List<String> newsFeed;
+    private long creationTime;
+    private long lastUpdateTime;
 
     public User(String userID) {
-        this.userID = userID;
+        super(userID);
+        this.creationTime = System.currentTimeMillis();
+        this.lastUpdateTime = 0;  // Initialize to 0
         followers = new ArrayList<>();
         newsFeed = new ArrayList<>();
     }
@@ -73,5 +77,15 @@ public class User implements Component, Observer {
     @Override
     public void accept(Visitor visitor) {
         visitor.visit(this);
+    }
+
+    // Getter for creationTime
+    public long getCreationTime() {
+        return creationTime;
+    }
+
+    // Getter for lastUpdateTime
+    public long getLastUpdateTime() {
+        return lastUpdateTime;
     }
 }
