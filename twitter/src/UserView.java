@@ -1,16 +1,15 @@
 package com.twitter;
 
 import javax.swing.*;
-import javax.swing.border.TitledBorder;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserView {
-    private static final java.util.List<UserView> userViews = new java.util.ArrayList<>();
+    private static final List<UserView> userViews = new ArrayList<>();
     private User user;
     private JFrame frame;
-    private JTextArea followTextArea; 
+    private JPanel followersPanel;
     private JList<String> followersList;
     private JTextArea tweetTextArea;
     private JList<String> newsFeedList;
@@ -36,69 +35,54 @@ public class UserView {
         frame = new JFrame(user.getID() + "'s User View");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frame.setSize(400, 300);
-    
-        // Follow User Section
-        JTextArea followTextArea = new JTextArea();
-        JButton followButton = new JButton("Follow User");
-        followButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String targetUserID = followTextArea.getText();
-                User targetUser = (User) AdminControlPanel.getInstance().getUserByID(targetUserID);
-                if (targetUser != null) {
-                    user.followUser(targetUser);
-                    updateFollowersList();
-                } else {
-                    JOptionPane.showMessageDialog(frame, "User not found!");
-                }
-            }
-        });
-    
-        // Following List Section
+
+        followersPanel = new JPanel();
         followersList = new JList<>();
-        TitledBorder followersTitle = BorderFactory.createTitledBorder("Following");
-        JPanel followersPanel = new JPanel(new BorderLayout());
-        followersPanel.setBorder(followersTitle);
-        followersPanel.add(new JScrollPane(followersList), BorderLayout.CENTER);
-    
-        // Tweet Section
         tweetTextArea = new JTextArea();
+        JButton followButton = new JButton("Follow User");
         JButton postTweetButton = new JButton("Post Tweet");
-        postTweetButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String tweet = tweetTextArea.getText();
-                if (!tweet.isEmpty()) {
-                    user.postTweet(tweet);
-                    updateTweetTextArea();
-                    updateNewsFeedList();
-                }
+        newsFeedList = new JList<>();
+
+        TitledBorder titledBorder = BorderFactory.createTitledBorder("Following");
+        followersPanel.setBorder(titledBorder);
+        followersPanel.add(new JScrollPane(followersList));
+
+        followButton.addActionListener(e -> {
+            String targetUserID = JOptionPane.showInputDialog(frame, "Enter the user ID to follow:");
+            User targetUser = (User) AdminControlPanel.getInstance().getUserByID(targetUserID);
+            if (targetUser != null) {
+                user.followUser(targetUser);
+                updateFollowersList();
+            } else {
+                JOptionPane.showMessageDialog(frame, "User not found!");
             }
         });
-    
-        // News Feed Section
-        newsFeedList = new JList<>();
-    
-        // Layout
-        JPanel panel = new JPanel(new GridLayout(4, 1));
-        panel.add(followTextArea); // Follow Text Area
-        panel.add(followButton); // Follow Button
-        panel.add(followersPanel); // Following List
-        panel.add(new JPanel()); // Empty panel for spacing
-        panel.add(new JScrollPane(tweetTextArea)); // Tweet Text Area
-        panel.add(postTweetButton); // Post Tweet Button
-        panel.add(new JScrollPane(newsFeedList)); // News Feed List
-    
+
+        postTweetButton.addActionListener(e -> {
+            String tweet = tweetTextArea.getText();
+            if (!tweet.isEmpty()) {
+                user.postTweet(tweet);
+                updateTweetTextArea();
+                updateNewsFeedList();
+            }
+        });
+
+        JPanel panel = new JPanel(new GridLayout(2, 2));
+        panel.add(followersPanel);
+        panel.add(new JScrollPane(tweetTextArea));
+        panel.add(followButton);
+        panel.add(postTweetButton);
+
         frame.setLayout(new BorderLayout());
         frame.add(panel, BorderLayout.CENTER);
-    
+        frame.add(new JScrollPane(newsFeedList), BorderLayout.SOUTH);
+
         updateFollowersList();
         updateTweetTextArea();
         updateNewsFeedList();
-    
+
         frame.setVisible(true);
-    }    
- 
+    }
 
     private void updateNewsFeedList() {
         DefaultListModel<String> newsFeedModel = new DefaultListModel<>();
@@ -113,10 +97,15 @@ public class UserView {
     }
 
     private void updateTweetTextArea() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         StringBuilder tweetText = new StringBuilder("\n");
+        tweetText.append("Creation Time: ").append(dateFormat.format(user.getCreationTime())).append("\n");
+        tweetText.append("Last Update Time: ").append(dateFormat.format(user.getLastUpdateTime())).append("\n");
+
         for (String tweet : user.getNewsFeed()) {
             tweetText.append(user.getID()).append(": ").append(tweet).append("\n");
         }
+
         tweetTextArea.setText(tweetText.toString());
         tweetTextArea.append("\n");
     }
