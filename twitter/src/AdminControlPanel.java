@@ -6,8 +6,7 @@ import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class AdminControlPanel {
     private static AdminControlPanel instance;
@@ -16,7 +15,8 @@ public class AdminControlPanel {
     private JButton addGroupButton;
     private JButton analyzeButton;
     private JButton openUserViewButton;
-    private JButton addUserToGroupButton; 
+    private JButton verifyIDsButton;
+    private JButton findLastUpdatedButton;
     private JTree userTree;
     private DefaultTreeModel treeModel;
     private DefaultMutableTreeNode root;
@@ -36,7 +36,8 @@ public class AdminControlPanel {
         addGroupButton = new JButton("Add Group");
         analyzeButton = new JButton("Analyze");
         openUserViewButton = new JButton("Open User View");
-        addUserToGroupButton = new JButton("Add User to Group"); 
+        verifyIDsButton = new JButton("Verify IDs");
+        findLastUpdatedButton = new JButton("Find Last Updated User");
 
         componentMap = new HashMap<>();
 
@@ -73,29 +74,40 @@ public class AdminControlPanel {
             }
         });
 
-        addUserToGroupButton.addActionListener(new ActionListener() {
+        verifyIDsButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String selectedUser = getSelectedUser();
-                String selectedGroup = getSelectedGroup();
-                if (selectedUser != null && selectedGroup != null) {
-                    addUserToGroup(selectedUser, selectedGroup);
-                }
+                verifyIDs();
             }
         });
 
-        JPanel panel = new JPanel(new GridLayout(2, 2));
+        findLastUpdatedButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                findLastUpdatedUser();
+            }
+        });
+
+        JPanel panel = new JPanel(new GridLayout(3, 2));
         panel.add(addUserButton);
         panel.add(addGroupButton);
         panel.add(analyzeButton);
         panel.add(openUserViewButton);
-        panel.add(addUserToGroupButton); 
+        panel.add(verifyIDsButton);
+        panel.add(findLastUpdatedButton);
 
         frame.setLayout(new BorderLayout());
         frame.add(new JScrollPane(userTree), BorderLayout.CENTER);
         frame.add(panel, BorderLayout.SOUTH);
 
         frame.setVisible(true);
+    }
+
+    public static AdminControlPanel getInstance() {
+        if (instance == null) {
+            instance = new AdminControlPanel();
+        }
+        return instance;
     }
 
     private void addUser(String userID) {
@@ -111,7 +123,7 @@ public class AdminControlPanel {
 
     private void addGroup(String groupID) {
         if (!componentMap.containsKey(groupID)) {
-            UserGroup newGroup = new UserGroup(groupID);
+            UserGroup newGroup = new UserGroup(groupID, null);
             DefaultMutableTreeNode groupNode = new DefaultMutableTreeNode(groupID);
             treeModel.insertNodeInto(groupNode, root, root.getChildCount());
             componentMap.put(groupID, newGroup);
@@ -140,46 +152,74 @@ public class AdminControlPanel {
         }
     }
 
+    private void verifyIDs() {
+        boolean isValid = validateIDs();
+        JOptionPane.showMessageDialog(frame, "All IDs are valid: " + isValid);
+    }
+
+    private boolean validateIDs() {
+        Set<String> uniqueIDs = new HashSet<>();
+        
+        // Validate User IDs
+        for (Component component : componentMap.values()) {
+            if (component instanceof User) {
+                String userID = ((User) component).getUserID();
+                if (uniqueIDs.contains(userID) || userID.contains(" ")) {
+                    return false;  // Invalid ID found
+                }
+                uniqueIDs.add(userID);
+            }
+        }
+
+        // Validate Group IDs
+        for (Component component : componentMap.values()) {
+            if (component instanceof UserGroup) {
+                String groupID = ((UserGroup) component).getUserID();
+                if (uniqueIDs.contains(groupID) || groupID.contains(" ")) {
+                    return false;  // Invalid ID found
+                }
+                uniqueIDs.add(groupID);
+            }
+        }
+
+        return true;  // All IDs are valid
+    }
+
+    private void findLastUpdatedUser() {
+        User lastUpdatedUser = findLastUpdatedUserLogic();
+        if (lastUpdatedUser != null) {
+            JOptionPane.showMessageDialog(frame, "Last Updated User: " + lastUpdatedUser.getUserID());
+        } else {
+            JOptionPane.showMessageDialog(frame, "No users found");
+        }
+    }
+
+    private User findLastUpdatedUserLogic() {
+        User lastUpdatedUser = null;
+        long latestUpdateTime = 0;
+
+        // Iterate over users to find the one with the latest lastUpdateTime
+        for (Component component : componentMap.values()) {
+            if (component instanceof User) {
+                User currentUser = (User) component;
+                long userLastUpdateTime = currentUser.getLastUpdateTime();
+
+                if (userLastUpdateTime > latestUpdateTime) {
+                    lastUpdatedUser = currentUser;
+                    latestUpdateTime = userLastUpdateTime;
+                }
+            }
+        }
+
+        return lastUpdatedUser;
+    }
+
     private String getSelectedUser() {
         Object selectedNode = userTree.getLastSelectedPathComponent();
         if (selectedNode != null && selectedNode instanceof DefaultMutableTreeNode) {
             return ((DefaultMutableTreeNode) selectedNode).getUserObject().toString();
         }
         return null;
-    }
-
-    private String getSelectedGroup() {
-        Object selectedNode = userTree.getLastSelectedPathComponent();
-        if (selectedNode != null && selectedNode instanceof DefaultMutableTreeNode) {
-            return ((DefaultMutableTreeNode) selectedNode).getUserObject().toString();
-        }
-        return null;
-    }
-
-    private void addUserToGroup(String userID, String groupID) {
-        Component userComponent = componentMap.get(userID);
-        Component groupComponent = componentMap.get(groupID);
-
-        if (userComponent instanceof User && groupComponent instanceof UserGroup) {
-            User user = (User) userComponent;
-            UserGroup group = (UserGroup) groupComponent;
-
-            group.addUser(user);
-            JOptionPane.showMessageDialog(frame, "User added to the group!");
-        } else {
-            JOptionPane.showMessageDialog(frame, "Invalid selection. Please select a user and a group.");
-        }
-    }
-
-    public Component getUserByID(String userID) {
-        return componentMap.get(userID);
-    }
-
-    public static AdminControlPanel getInstance() {
-        if (instance == null) {
-            instance = new AdminControlPanel();
-        }
-        return instance;
     }
 
     public static void main(String[] args) {
